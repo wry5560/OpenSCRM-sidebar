@@ -284,17 +284,17 @@ const ScriptLibraryList: React.FC = () => {
       <BottomNavBar links={[
         {
           title: '话术',
-          url: '/staff-frontend/script-library',
+          url: '/script-library',
           icon: 'icon-message-success',
         },
         {
           title: '素材',
-          url: '/staff-frontend/material-library',
+          url: '/material-library',
           icon: 'icon-sucai-outline',
         },
         {
           title: '雷达',
-          url: '/staff-frontend/radar',
+          url: '/radar',
           icon: 'icon-leida',
           disabled: true,
         },

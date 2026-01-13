@@ -1,4 +1,4 @@
-﻿export default [
+export default [
   {
     path: '/',
     component: '../layouts/BlankLayout',
@@ -6,15 +6,15 @@
       // 公开路由
       {
         name: '员工登录',
-        path: '/staff-frontend/login',
+        path: '/login',
         component: './StaffFrontend/Login/index',
       },
       {
-        path: '/staff-frontend/login-callback',
+        path: '/login-callback',
         routes: [
           {
             name: '员工登录回调',
-            path: '/staff-frontend/login-callback',
+            path: '/login-callback',
             component: './StaffFrontend/Login/callback',
           },
         ],
@@ -22,37 +22,37 @@
       {
         path: '/',
         exact: true,
-        redirect: '/staff-frontend/login',
+        redirect: '/login',
       },
 
       // 侧边栏员工登录后授权路由
       {
         name:'侧边栏员工登录后授权路由',
-        path: '/staff-frontend/',
+        path: '/',
         component: '../layouts/StaffFrontendSecurityLayout',
         routes: [
           {
-            path: '/staff-frontend/',
+            path: '/',
             component: '../layouts/BasicLayout',
             routes: [
               {
-                path: '/staff-frontend/',
+                path: '/',
                 exact: true,
-                redirect: '/staff-frontend/welcome',
+                redirect: '/welcome',
               },
               {
-                path: '/staff-frontend/welcome',
+                path: '/welcome',
                 name: '首页',
                 component: './Welcome',
               },
               {
                 name: '话术库',
-                path: '/staff-frontend/script-library',
+                path: '/script-library',
                 component: './StaffFrontend/ScriptLibrary/index',
               },
               {
                 name: '素材库',
-                path: '/staff-frontend/material-library',
+                path: '/material-library',
                 component: './StaffFrontend/MaterialLibrary/index',
               },
               {

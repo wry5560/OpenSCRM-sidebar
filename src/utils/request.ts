@@ -56,8 +56,8 @@ const bizCodeHandler = async (response: Response): Promise<Response> => {
         redirect: window.location.href,
       });
 
-      if (!window.location.href.includes("/staff-frontend/login")) { // 避免登录页的请求会话失效时，重复跳转
-        history.push(`/staff-frontend/login?${queryString}`);
+      if (!window.location.href.includes("/login")) { // 避免登录页的请求会话失效时，重复跳转
+        history.push(`/login?${queryString}`);
       }
 
       return response;
