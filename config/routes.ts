@@ -56,11 +56,6 @@ export default [
                 component: './StaffFrontend/MaterialLibrary/index',
               },
               {
-                path: '/welcome',
-                name: '首页',
-                component: './Welcome',
-              },
-              {
                 component: './404',
               },
             ],
