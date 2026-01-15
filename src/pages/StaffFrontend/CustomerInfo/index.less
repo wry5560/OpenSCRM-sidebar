@@ -1,0 +1,159 @@
+.container {
+  padding: 12px;
+  padding-bottom: 60px; // 为底部导航栏留出空间
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #fff;
+}
+
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #fff;
+  padding: 20px;
+}
+
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #fff;
+  padding: 20px;
+}
+
+.formCard {
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+
+  .cardTitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+}
+
+.formItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .label {
+    width: 80px;
+    flex-shrink: 0;
+    color: #666;
+    font-size: 13px;
+    line-height: 32px;
+  }
+
+  .value {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .readonlyValue {
+    line-height: 32px;
+    color: #333;
+    font-size: 13px;
+    word-break: break-all;
+  }
+}
+
+.saveButton {
+  margin-top: 16px;
+}
+
+// 搜索页面样式
+.searchContainer {
+  min-height: 100vh;
+  background: #fff;
+  padding: 12px;
+  padding-bottom: 60px;
+
+  .searchHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .backButton {
+      margin-right: 12px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  .searchInput {
+    margin-bottom: 16px;
+  }
+
+  .searchResults {
+    .resultItem {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f0f0f0;
+      }
+
+      &:active {
+        background: #e8e8e8;
+      }
+
+      .customerNo {
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 4px;
+      }
+
+      .phone {
+        font-size: 13px;
+        color: #666;
+      }
+
+      .info {
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  .noResult {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+  }
+
+  .loadingMore {
+    text-align: center;
+    padding: 16px;
+  }
+}

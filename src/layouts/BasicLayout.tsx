@@ -12,10 +12,31 @@ import ScriptTag from 'react-script-tag';
 import {CommonResp, GetJSAgentConfig, GetJSAgentConfigResult, GetJSConfig, GetJSConfigResult} from "@/services/common";
 import {message} from "antd";
 import {ConnectProps} from "@@/plugin-dva/connect";
+import BottomNavBar from "@/pages/StaffFrontend/Components/BottomNavBar";
+import {UserOutlined, MessageOutlined, FolderOutlined} from "@ant-design/icons";
 
 export type BasicLayoutProps = {
   dispatch: Dispatch;
 } & ConnectProps;
+
+// 底部导航栏配置
+const bottomNavLinks = [
+  {
+    title: '客户信息',
+    url: '/customer-info',
+    icon: <UserOutlined />,
+  },
+  {
+    title: '话术库',
+    url: '/script-library',
+    icon: <MessageOutlined />,
+  },
+  {
+    title: '素材库',
+    url: '/material-library',
+    icon: <FolderOutlined />,
+  },
+];
 
 const BasicLayout: React.FC<BasicLayoutProps> = (props) => {
   const {children} = props;
@@ -36,7 +57,7 @@ const BasicLayout: React.FC<BasicLayoutProps> = (props) => {
           timestamp: params.timestamp, // 必填，生成签名的时间戳
           nonceStr: params.nonce_str, // 必填，生成签名的随机串
           signature: params.signature,// 必填，签名，见 附录-JS-SDK使用权限签名算法
-          jsApiList: ["sendChatMessage", "agentConfig"] // 必填，需要使用的JS接口列表，凡是要调用的接口都需要传进来
+          jsApiList: ["sendChatMessage", "agentConfig", "getCurExternalContact"] // 必填，需要使用的JS接口列表，凡是要调用的接口都需要传进来
         });
 
         // @ts-ignore
@@ -69,7 +90,7 @@ const BasicLayout: React.FC<BasicLayoutProps> = (props) => {
             timestamp: params.timestamp, // 必填，生成签名的时间戳
             nonceStr: params.nonce_str, // 必填，生成签名的随机串
             signature: params.signature,// 必填，签名，见 附录-JS-SDK使用权限签名算法
-            jsApiList: ['sendChatMessage'], // 必填，传入需要使用的接口名称
+            jsApiList: ['sendChatMessage', 'getCurExternalContact'], // 必填，传入需要使用的接口名称
             success(result: any) {
               console.log("agentConfig 成功", "result", result)
             },
@@ -92,7 +113,10 @@ const BasicLayout: React.FC<BasicLayoutProps> = (props) => {
         src="//res.wx.qq.com/open/js/jweixin-1.2.0.js"
         onLoad={handleScriptLoad}
       />
-      {children}
+      <div style={{ paddingBottom: 50 }}>
+        {children}
+      </div>
+      <BottomNavBar links={bottomNavLinks} />
     </>
   );
 };

@@ -38,12 +38,12 @@ export default [
               {
                 path: '/',
                 exact: true,
-                redirect: '/welcome',
+                redirect: '/customer-info',
               },
               {
-                path: '/welcome',
-                name: '首页',
-                component: './Welcome',
+                path: '/customer-info',
+                name: '客户信息',
+                component: './StaffFrontend/CustomerInfo/index',
               },
               {
                 name: '话术库',
@@ -54,6 +54,11 @@ export default [
                 name: '素材库',
                 path: '/material-library',
                 component: './StaffFrontend/MaterialLibrary/index',
+              },
+              {
+                path: '/welcome',
+                name: '首页',
+                component: './Welcome',
               },
               {
                 component: './404',
