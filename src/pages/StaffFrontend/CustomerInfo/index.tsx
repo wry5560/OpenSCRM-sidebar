@@ -178,21 +178,20 @@ const CustomerInfoPage: React.FC = () => {
   // 渲染客户信息表单
   return (
     <div className={styles.container}>
-      <div className={styles.changeBindingBar}>
-        <Button
-          type="link"
-          icon={<SwapOutlined />}
-          onClick={handleChangeBinding}
-          className={styles.changeBindingButton}
-        >
-          更改客户绑定
-        </Button>
-      </div>
       <CustomerForm
         customer={customer}
         fieldConfigs={fieldConfigs}
         onUpdateSuccess={handleUpdateSuccess}
       />
+      <Button
+        type="default"
+        icon={<SwapOutlined />}
+        onClick={handleChangeBinding}
+        block
+        className={styles.changeBindingButton}
+      >
+        更改客户绑定
+      </Button>
     </div>
   );
 };
