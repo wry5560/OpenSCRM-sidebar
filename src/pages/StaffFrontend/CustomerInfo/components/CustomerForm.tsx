@@ -1,14 +1,51 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Input, Select, DatePicker, Button, message, Spin } from 'antd';
+import { Button, message, Spin } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
-import moment from 'moment';
 import styles from '../index.less';
 import { updateCustomer, FieldConfig, CustomerInfo, UpdateField } from '../service';
+import DynamicField from '@/components/DynamicField';
 
 interface CustomerFormProps {
   customer: CustomerInfo;
   fieldConfigs: FieldConfig[];
   onUpdateSuccess: () => void;
+}
+
+/**
+ * 将字段列表按 Divider/Section 类型分组
+ */
+function groupFieldsBySections(fields: FieldConfig[]): {
+  title: string;
+  fields: FieldConfig[];
+}[] {
+  const sections: { title: string; fields: FieldConfig[] }[] = [];
+  let currentSection: { title: string; fields: FieldConfig[] } = {
+    title: '基本信息',
+    fields: [],
+  };
+
+  fields.forEach((field) => {
+    if (field.type === 'Divider' || field.type === 'Section') {
+      // 保存当前分组（如果有字段）
+      if (currentSection.fields.length > 0) {
+        sections.push(currentSection);
+      }
+      // 开始新分组
+      currentSection = {
+        title: field.name,
+        fields: [],
+      };
+    } else {
+      currentSection.fields.push(field);
+    }
+  });
+
+  // 保存最后一个分组
+  if (currentSection.fields.length > 0) {
+    sections.push(currentSection);
+  }
+
+  return sections;
 }
 
 const CustomerForm: React.FC<CustomerFormProps> = ({
@@ -19,121 +56,44 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
 
+  // 按分隔符分组字段
+  const sections = useMemo(() => groupFieldsBySections(fieldConfigs), [fieldConfigs]);
+
   // 检查是否有修改
   const hasChanges = useMemo(() => {
     return Object.keys(formValues).length > 0;
   }, [formValues]);
 
-  // 字段ID到别名的映射（明道云返回数据可能使用别名作为key）
-  const fieldAliasMap: Record<string, string> = {
-    '693660e95326c71216b1b87a': 'userNO', // 客户编号
-    '694b6d090d5691f00accd141': 'userYX', // 客户意向
-  };
-
-  // 获取字段显示值
-  const getDisplayValue = useCallback(
-    (fieldId: string, fieldConfig: FieldConfig) => {
-      // 先尝试用字段ID获取，如果没有则尝试用别名获取
-      let rawValue = customer.fields[fieldId];
-      if ((rawValue === null || rawValue === undefined) && fieldAliasMap[fieldId]) {
-        rawValue = customer.fields[fieldAliasMap[fieldId]];
-      }
-      if (rawValue === null || rawValue === undefined || rawValue === '') {
-        return '-';
+  // 获取字段值（优先使用编辑中的值，其次使用客户数据）
+  const getFieldValue = useCallback(
+    (field: FieldConfig) => {
+      // 如果有编辑中的值，使用编辑值
+      if (field.id in formValues) {
+        return formValues[field.id];
       }
 
-      // 下拉选项类型，显示选项文字
-      if (
-        (fieldConfig.type === 'Dropdown' || fieldConfig.type === 'SingleSelect') &&
-        fieldConfig.options
-      ) {
-        // 明道云返回的Dropdown值可能是数组格式 [{"key":"xxx","value":"yyy"}]
-        let keyValue = rawValue;
-        if (Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].key) {
-          keyValue = rawValue[0].key;
+      // 尝试用字段ID获取原始值
+      let rawValue = customer.fields[field.id];
+
+      // 如果没有，尝试用别名获取
+      if ((rawValue === null || rawValue === undefined) && field.alias) {
+        rawValue = customer.fields[field.alias];
+      }
+
+      // 处理明道云返回的特殊格式
+      if (rawValue !== null && rawValue !== undefined) {
+        // Dropdown 可能返回 [{key, value}] 格式
+        if ((field.type === 'Dropdown' || field.type === 'SingleSelect') &&
+            Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0]?.key) {
+          return rawValue[0].key;
         }
-        const option = fieldConfig.options.find((opt) => opt.key === keyValue);
-        return option?.value || (Array.isArray(rawValue) && rawValue[0]?.value) || rawValue;
+        // MultipleSelect 可能返回 [{key, value}] 格式
+        if (field.type === 'MultipleSelect' &&
+            Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0]?.key) {
+          return rawValue.map((item: any) => item.key);
+        }
       }
 
-      // 多选类型
-      if (fieldConfig.type === 'MultipleSelect' && fieldConfig.options) {
-        if (Array.isArray(rawValue)) {
-          const values = rawValue
-            .map((item: any) => {
-              // 处理 {key, value} 对象格式
-              const key = typeof item === 'object' && item.key ? item.key : item;
-              const option = fieldConfig.options?.find((opt) => opt.key === key);
-              return option?.value || (typeof item === 'object' && item.value) || key;
-            })
-            .filter(Boolean);
-          return values.join('、') || '-';
-        }
-        // 如果是JSON字符串
-        if (typeof rawValue === 'string') {
-          try {
-            const keys = JSON.parse(rawValue);
-            if (Array.isArray(keys)) {
-              const values = keys
-                .map((key: string) => {
-                  const option = fieldConfig.options?.find((opt) => opt.key === key);
-                  return option?.value || key;
-                })
-                .filter(Boolean);
-              return values.join('、') || '-';
-            }
-          } catch {
-            // 忽略解析错误
-          }
-        }
-        return rawValue;
-      }
-
-      // 协作者类型
-      if (fieldConfig.type === 'Collaborator') {
-        if (typeof rawValue === 'object' && rawValue.name) {
-          return rawValue.name;
-        }
-        if (Array.isArray(rawValue)) {
-          return rawValue.map((item: any) => item.name || item).join('、') || '-';
-        }
-        return rawValue;
-      }
-
-      // 日期类型
-      if (fieldConfig.type === 'Date' || fieldConfig.type === 'DateTime') {
-        if (rawValue) {
-          return moment(rawValue).format('YYYY-MM-DD');
-        }
-        return '-';
-      }
-
-      return String(rawValue);
-    },
-    [customer]
-  );
-
-  // 获取编辑值
-  const getEditValue = useCallback(
-    (fieldId: string, fieldType?: string) => {
-      if (fieldId in formValues) {
-        return formValues[fieldId];
-      }
-      // 先尝试用字段ID获取，如果没有则尝试用别名获取
-      let rawValue = customer.fields[fieldId];
-      if ((rawValue === null || rawValue === undefined) && fieldAliasMap[fieldId]) {
-        rawValue = customer.fields[fieldAliasMap[fieldId]];
-      }
-      // 处理Dropdown类型的数组格式
-      if ((fieldType === 'Dropdown' || fieldType === 'SingleSelect') &&
-          Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].key) {
-        return rawValue[0].key;
-      }
-      // 处理MultipleSelect类型的数组格式
-      if (fieldType === 'MultipleSelect' &&
-          Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].key) {
-        return rawValue.map((item: any) => item.key);
-      }
       return rawValue;
     },
     [customer, formValues]
@@ -157,11 +117,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     try {
       const updates: UpdateField[] = Object.entries(formValues).map(([controlId, value]) => ({
         controlId,
-        value: typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''),
+        value: Array.isArray(value)
+          ? JSON.stringify(value)
+          : typeof value === 'object' && value !== null
+            ? JSON.stringify(value)
+            : String(value ?? ''),
       }));
 
       const res = await updateCustomer(customer.row_id, updates);
       if (res.code === 0) {
+        message.success('保存成功');
         setFormValues({});
         onUpdateSuccess();
       } else {
@@ -175,136 +140,37 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     }
   }, [customer, formValues, hasChanges, onUpdateSuccess]);
 
-  // 渲染字段
+  // 渲染单个字段
   const renderField = useCallback(
-    (fieldConfig: FieldConfig) => {
-      const { id, name, type, editable, options } = fieldConfig;
-
-      // 只读字段
-      if (!editable) {
-        return (
-          <div key={id} className={styles.formItem}>
-            <span className={styles.label}>{name}</span>
-            <div className={styles.value}>
-              <span className={styles.readonlyValue}>{getDisplayValue(id, fieldConfig)}</span>
-            </div>
-          </div>
-        );
-      }
-
-      const value = getEditValue(id, type);
-
-      // 可编辑字段 - 根据类型渲染不同组件
-      let inputComponent: React.ReactNode;
-
-      switch (type) {
-        case 'Dropdown':
-        case 'SingleSelect':
-          inputComponent = (
-            <Select
-              value={value}
-              onChange={(val) => handleValueChange(id, val)}
-              placeholder={`请选择${name}`}
-              style={{ width: '100%' }}
-              allowClear
-            >
-              {options?.map((opt) => (
-                <Select.Option key={opt.key} value={opt.key}>
-                  {opt.value}
-                </Select.Option>
-              ))}
-            </Select>
-          );
-          break;
-
-        case 'MultipleSelect':
-          const multiValue = Array.isArray(value)
-            ? value
-            : typeof value === 'string'
-            ? (() => {
-                try {
-                  return JSON.parse(value);
-                } catch {
-                  return [];
-                }
-              })()
-            : [];
-          inputComponent = (
-            <Select
-              mode="multiple"
-              value={multiValue}
-              onChange={(val) => handleValueChange(id, val)}
-              placeholder={`请选择${name}`}
-              style={{ width: '100%' }}
-              allowClear
-            >
-              {options?.map((opt) => (
-                <Select.Option key={opt.key} value={opt.key}>
-                  {opt.value}
-                </Select.Option>
-              ))}
-            </Select>
-          );
-          break;
-
-        case 'Date':
-        case 'DateTime':
-          inputComponent = (
-            <DatePicker
-              value={value ? moment(value) : null}
-              onChange={(date) => handleValueChange(id, date?.format('YYYY-MM-DD') || '')}
-              placeholder={`请选择${name}`}
-              style={{ width: '100%' }}
-            />
-          );
-          break;
-
-        default:
-          inputComponent = (
-            <Input
-              value={value ?? ''}
-              onChange={(e) => handleValueChange(id, e.target.value)}
-              placeholder={`请输入${name}`}
-            />
-          );
-      }
+    (field: FieldConfig) => {
+      const value = getFieldValue(field);
+      const isEditable = field.editable;
 
       return (
-        <div key={id} className={styles.formItem}>
-          <span className={styles.label}>{name}</span>
-          <div className={styles.value}>{inputComponent}</div>
+        <div key={field.id} className={styles.formItem}>
+          <span className={styles.label}>{field.name}</span>
+          <div className={styles.value}>
+            <DynamicField
+              field={field}
+              value={value}
+              onChange={isEditable ? (val) => handleValueChange(field.id, val) : undefined}
+              readonly={!isEditable}
+            />
+          </div>
         </div>
       );
     },
-    [getDisplayValue, getEditValue, handleValueChange]
-  );
-
-  // 基本信息只显示客户编号和号码
-  const basicFieldIds = ['693660e95326c71216b1b87a', '692f976f7001b729cd1c01c1'];
-  const basicFieldNames = ['客户编号', '号码'];
-  const basicFields = fieldConfigs.filter(
-    (field) => basicFieldIds.includes(field.id) || basicFieldNames.includes(field.name)
-  );
-  // 客户画像 - 原来的第12个字段开始，排除设计师和轨道
-  const hiddenProfileFieldIds = ['692f976f7001b729cd1c01c3', '694b6c7a0d5691f00acccf70'];
-  const hiddenProfileFieldNames = ['设计师', '轨道'];
-  const profileFields = fieldConfigs.slice(11).filter(
-    (field) => !hiddenProfileFieldIds.includes(field.id) && !hiddenProfileFieldNames.includes(field.name)
+    [getFieldValue, handleValueChange]
   );
 
   return (
     <Spin spinning={saving}>
-      <div className={styles.formCard}>
-        <div className={styles.cardTitle}>基本信息</div>
-        {basicFields.map((field) => renderField(field))}
-      </div>
-
-      {profileFields.length > 0 && (
-        <div className={styles.formCard}>
-          <div className={styles.cardTitle}>客户画像</div>
-          {profileFields.map((field) => renderField(field))}
+      {sections.map((section, index) => (
+        <div key={index} className={styles.formCard}>
+          <div className={styles.cardTitle}>{section.title}</div>
+          {section.fields.map((field) => renderField(field))}
         </div>
-      )}
+      ))}
 
       {hasChanges && (
         <Button

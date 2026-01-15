@@ -1,13 +1,27 @@
 import request from '@/utils/request';
 import { StaffFrontendApiPrefix } from '../../../../config/constant';
 
-// 字段配置
+// 字段选项（用于下拉选择类字段）
+export interface FieldOption {
+  key: string;
+  value: string;
+  color?: string;
+  score?: number;
+}
+
+// 字段配置（从明道云视图动态获取）
 export interface FieldConfig {
   id: string;
   name: string;
-  type: string;
+  alias?: string;
+  type: string;           // Text, Dropdown, MultipleSelect, Date, DateTime, Number, etc.
+  subType?: number;
+  options?: FieldOption[];
+  required: boolean;
   editable: boolean;
-  options?: { key: string; value: string }[];
+  isTitle?: boolean;
+  unit?: string;          // 数值单位
+  precision?: number;     // 数值精度（小数位数）
 }
 
 // 客户信息
