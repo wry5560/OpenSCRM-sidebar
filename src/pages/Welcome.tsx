@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { history } from 'umi';
 import { Card, Row, Col } from 'antd';
 import { FileTextOutlined, FolderOutlined } from '@ant-design/icons';
 import styles from './Welcome.less';
 
 const Welcome: React.FC = () => {
+  // 自动跳转到客户信息页面
+  useEffect(() => {
+    history.replace('/customer-info');
+  }, []);
   const menuItems = [
     {
       title: '话术库',
