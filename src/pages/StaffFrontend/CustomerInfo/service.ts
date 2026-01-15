@@ -114,14 +114,31 @@ export async function bindCustomer(
   });
 }
 
-// 获取当前聊天的外部联系人ID
-export function getExternalContact(): Promise<string> {
+// 等待企业微信SDK初始化完成
+function waitForWxSdk(maxRetries: number = 10, interval: number = 500): Promise<void> {
   return new Promise((resolve, reject) => {
-    // @ts-ignore
-    if (!window.wx || !window.wx.invoke) {
-      reject(new Error('企业微信JSSDK未加载'));
-      return;
-    }
+    let retries = 0;
+    const check = () => {
+      // @ts-ignore
+      if (window.wx && window.wx.invoke) {
+        resolve();
+      } else if (retries >= maxRetries) {
+        reject(new Error('企业微信JSSDK加载超时'));
+      } else {
+        retries++;
+        setTimeout(check, interval);
+      }
+    };
+    check();
+  });
+}
+
+// 获取当前聊天的外部联系人ID
+export async function getExternalContact(): Promise<string> {
+  // 先等待SDK加载完成
+  await waitForWxSdk();
+
+  return new Promise((resolve, reject) => {
     // @ts-ignore
     window.wx.invoke('getCurExternalContact', {}, (res: any) => {
       if (res.err_msg === 'getCurExternalContact:ok') {
