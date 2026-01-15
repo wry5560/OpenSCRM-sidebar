@@ -7,7 +7,7 @@ export type LoginCallbackProps = {
 };
 
 const LoginCallback: React.FC<LoginCallbackProps> = (props) => {
-  const sourceURL = new URLSearchParams(window.location.search).get('redirect') || window.location.href.replace(window.location.pathname, '/staff-frontend/welcome')
+  const sourceURL = new URLSearchParams(window.location.search).get('redirect') || window.location.href.replace(window.location.pathname, '/customer-info')
   useEffect(() => {
     const { dispatch } = props;
     if (dispatch) {
