@@ -253,6 +253,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const basicFields = fieldConfigs.filter(
     (field) => basicFieldIds.includes(field.id) || basicFieldNames.includes(field.name)
   );
+  // 客户画像 - 原来的第12个字段开始
+  const profileFields = fieldConfigs.slice(11);
 
   return (
     <Spin spinning={saving}>
@@ -260,6 +262,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         <div className={styles.cardTitle}>基本信息</div>
         {basicFields.map((field) => renderField(field))}
       </div>
+
+      {profileFields.length > 0 && (
+        <div className={styles.formCard}>
+          <div className={styles.cardTitle}>客户画像</div>
+          {profileFields.map((field) => renderField(field))}
+        </div>
+      )}
 
       {hasChanges && (
         <Button
