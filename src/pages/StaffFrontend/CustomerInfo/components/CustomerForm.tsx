@@ -24,10 +24,19 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     return Object.keys(formValues).length > 0;
   }, [formValues]);
 
+  // 字段ID到别名的映射（明道云返回数据可能使用别名作为key）
+  const fieldAliasMap: Record<string, string> = {
+    '693660e95326c71216b1b87a': 'userNO', // 客户编号
+  };
+
   // 获取字段显示值
   const getDisplayValue = useCallback(
     (fieldId: string, fieldConfig: FieldConfig) => {
-      const rawValue = customer.fields[fieldId];
+      // 先尝试用字段ID获取，如果没有则尝试用别名获取
+      let rawValue = customer.fields[fieldId];
+      if ((rawValue === null || rawValue === undefined) && fieldAliasMap[fieldId]) {
+        rawValue = customer.fields[fieldAliasMap[fieldId]];
+      }
       if (rawValue === null || rawValue === undefined || rawValue === '') {
         return '-';
       }
@@ -253,8 +262,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const basicFields = fieldConfigs.filter(
     (field) => basicFieldIds.includes(field.id) || basicFieldNames.includes(field.name)
   );
-  // 客户画像 - 原来的第12个字段开始
-  const profileFields = fieldConfigs.slice(11);
+  // 客户画像 - 原来的第12个字段开始，排除设计师和轨道
+  const hiddenProfileFieldIds = ['692f976f7001b729cd1c01c3', '694b6c7a0d5691f00acccf70'];
+  const hiddenProfileFieldNames = ['设计师', '轨道'];
+  const profileFields = fieldConfigs.slice(11).filter(
+    (field) => !hiddenProfileFieldIds.includes(field.id) && !hiddenProfileFieldNames.includes(field.name)
+  );
 
   return (
     <Spin spinning={saving}>
