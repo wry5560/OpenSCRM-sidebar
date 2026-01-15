@@ -1,27 +1,36 @@
 import React, { useState, useCallback } from 'react';
-import { Input, Button, Spin, message, Empty } from 'antd';
-import { ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons';
+import { Input, Button, Spin, message, Empty, Tag } from 'antd';
+import { ArrowLeftOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import styles from '../index.less';
-import { searchCustomers, bindCustomer, FieldConfig, CustomerInfo } from '../service';
+import { searchCustomers, bindCustomer, changeBinding, FieldConfig, CustomerInfo } from '../service';
 
 interface CustomerSearchProps {
   externalUserID: string;
   fieldConfigs: FieldConfig[];
   onCancel: () => void;
   onBindSuccess: (customer: CustomerInfo) => void;
+  // 更改绑定模式：传入原客户ID
+  oldCustomerRowId?: string;
 }
+
+// 企微外部用户ID字段ID
+const WECOM_EXTERNAL_USERID_FIELD = '692f976f7001b729cd1c01ca';
 
 const CustomerSearch: React.FC<CustomerSearchProps> = ({
   externalUserID,
   fieldConfigs,
   onCancel,
   onBindSuccess,
+  oldCustomerRowId,
 }) => {
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [binding, setBinding] = useState<string | null>(null);
   const [results, setResults] = useState<CustomerInfo[]>([]);
   const [searched, setSearched] = useState(false);
+
+  // 是否是更改绑定模式
+  const isChangeMode = !!oldCustomerRowId;
 
   // 获取字段名称映射
   const fieldNameMap = React.useMemo(() => {
@@ -58,6 +67,13 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
     }
   }, [keyword]);
 
+  // 检查客户是否已绑定微信
+  const isCustomerBound = useCallback((customer: CustomerInfo): boolean => {
+    const fields = customer.fields || {};
+    const boundExternalUserId = fields[WECOM_EXTERNAL_USERID_FIELD] || fields['wecomExternalUserid'];
+    return !!boundExternalUserId && boundExternalUserId !== '';
+  }, []);
+
   // 绑定客户
   const handleBind = useCallback(
     async (customer: CustomerInfo) => {
@@ -66,9 +82,23 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         return;
       }
 
+      // 检查是否已绑定
+      if (isCustomerBound(customer)) {
+        message.warning('该客户已有微信关联，请选择其他客户');
+        return;
+      }
+
       setBinding(customer.row_id);
       try {
-        const res = await bindCustomer(customer.row_id, externalUserID);
+        let res;
+        if (isChangeMode && oldCustomerRowId) {
+          // 更改绑定模式
+          res = await changeBinding(customer.row_id, oldCustomerRowId, externalUserID);
+        } else {
+          // 首次绑定模式
+          res = await bindCustomer(customer.row_id, externalUserID);
+        }
+
         if (res.code === 0) {
           onBindSuccess(customer);
         } else {
@@ -81,7 +111,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         setBinding(null);
       }
     },
-    [externalUserID, onBindSuccess]
+    [externalUserID, onBindSuccess, isChangeMode, oldCustomerRowId, isCustomerBound]
   );
 
   // 获取客户显示信息
@@ -106,7 +136,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           className={styles.backButton}
           onClick={onCancel}
         />
-        <span className={styles.title}>关联客户</span>
+        <span className={styles.title}>{isChangeMode ? '更改客户绑定' : '关联客户'}</span>
       </div>
 
       <Input.Search
@@ -133,18 +163,26 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           {results.map((customer) => {
             const { customerNo, phone, douyinName } = getCustomerDisplay(customer);
             const isBinding = binding === customer.row_id;
+            const isBound = isCustomerBound(customer);
 
             return (
               <div
                 key={customer.row_id}
-                className={styles.resultItem}
-                onClick={() => !isBinding && handleBind(customer)}
+                className={`${styles.resultItem} ${isBound ? styles.resultItemDisabled : ''}`}
+                onClick={() => !isBinding && !isBound && handleBind(customer)}
               >
                 {isBinding ? (
                   <Spin size="small" />
                 ) : (
                   <>
-                    {customerNo && <div className={styles.customerNo}>客户编号: {customerNo}</div>}
+                    <div className={styles.resultItemHeader}>
+                      {customerNo && <span className={styles.customerNo}>客户编号: {customerNo}</span>}
+                      {isBound && (
+                        <Tag icon={<LinkOutlined />} color="warning" className={styles.boundTag}>
+                          已有关联
+                        </Tag>
+                      )}
+                    </div>
                     {phone && <div className={styles.phone}>手机号: {phone}</div>}
                     {douyinName && <div className={styles.info}>抖音名称: {douyinName}</div>}
                   </>

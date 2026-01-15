@@ -27,6 +27,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   // 字段ID到别名的映射（明道云返回数据可能使用别名作为key）
   const fieldAliasMap: Record<string, string> = {
     '693660e95326c71216b1b87a': 'userNO', // 客户编号
+    '694b6d090d5691f00accd141': 'userYX', // 客户意向
   };
 
   // 获取字段显示值
@@ -46,17 +47,24 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         (fieldConfig.type === 'Dropdown' || fieldConfig.type === 'SingleSelect') &&
         fieldConfig.options
       ) {
-        const option = fieldConfig.options.find((opt) => opt.key === rawValue);
-        return option?.value || rawValue;
+        // 明道云返回的Dropdown值可能是数组格式 [{"key":"xxx","value":"yyy"}]
+        let keyValue = rawValue;
+        if (Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].key) {
+          keyValue = rawValue[0].key;
+        }
+        const option = fieldConfig.options.find((opt) => opt.key === keyValue);
+        return option?.value || (Array.isArray(rawValue) && rawValue[0]?.value) || rawValue;
       }
 
       // 多选类型
       if (fieldConfig.type === 'MultipleSelect' && fieldConfig.options) {
         if (Array.isArray(rawValue)) {
           const values = rawValue
-            .map((key: string) => {
+            .map((item: any) => {
+              // 处理 {key, value} 对象格式
+              const key = typeof item === 'object' && item.key ? item.key : item;
               const option = fieldConfig.options?.find((opt) => opt.key === key);
-              return option?.value || key;
+              return option?.value || (typeof item === 'object' && item.value) || key;
             })
             .filter(Boolean);
           return values.join('、') || '-';
@@ -107,11 +115,26 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
 
   // 获取编辑值
   const getEditValue = useCallback(
-    (fieldId: string) => {
+    (fieldId: string, fieldType?: string) => {
       if (fieldId in formValues) {
         return formValues[fieldId];
       }
-      return customer.fields[fieldId];
+      // 先尝试用字段ID获取，如果没有则尝试用别名获取
+      let rawValue = customer.fields[fieldId];
+      if ((rawValue === null || rawValue === undefined) && fieldAliasMap[fieldId]) {
+        rawValue = customer.fields[fieldAliasMap[fieldId]];
+      }
+      // 处理Dropdown类型的数组格式
+      if ((fieldType === 'Dropdown' || fieldType === 'SingleSelect') &&
+          Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].key) {
+        return rawValue[0].key;
+      }
+      // 处理MultipleSelect类型的数组格式
+      if (fieldType === 'MultipleSelect' &&
+          Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].key) {
+        return rawValue.map((item: any) => item.key);
+      }
+      return rawValue;
     },
     [customer, formValues]
   );
@@ -169,7 +192,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         );
       }
 
-      const value = getEditValue(id);
+      const value = getEditValue(id, type);
 
       // 可编辑字段 - 根据类型渲染不同组件
       let inputComponent: React.ReactNode;

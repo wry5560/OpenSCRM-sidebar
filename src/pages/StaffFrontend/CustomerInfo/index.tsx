@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Spin, message, Empty, Button, Result } from 'antd';
-import { UserAddOutlined, ReloadOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ReloadOutlined, SwapOutlined } from '@ant-design/icons';
 import styles from './index.less';
 import CustomerForm from './components/CustomerForm';
 import CustomerSearch from './components/CustomerSearch';
@@ -19,6 +19,8 @@ const CustomerInfoPage: React.FC = () => {
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
   const [externalUserID, setExternalUserID] = useState<string>('');
   const [showSearch, setShowSearch] = useState(false);
+  // 更改绑定模式
+  const [changeBindingMode, setChangeBindingMode] = useState(false);
 
   // 加载字段配置
   const loadFieldConfigs = useCallback(async () => {
@@ -87,9 +89,12 @@ const CustomerInfoPage: React.FC = () => {
     (newCustomer: CustomerInfo) => {
       setCustomer(newCustomer);
       setShowSearch(false);
-      message.success('客户关联成功');
+      setChangeBindingMode(false);
+      message.success(changeBindingMode ? '客户绑定已更改' : '客户关联成功');
+      // 重新加载客户信息以获取完整数据
+      loadCustomer();
     },
-    []
+    [changeBindingMode, loadCustomer]
   );
 
   // 处理更新成功
@@ -100,6 +105,18 @@ const CustomerInfoPage: React.FC = () => {
       loadCustomer();
     }
   }, [customer, loadCustomer]);
+
+  // 处理更改绑定
+  const handleChangeBinding = useCallback(() => {
+    setChangeBindingMode(true);
+    setShowSearch(true);
+  }, []);
+
+  // 处理取消搜索
+  const handleCancelSearch = useCallback(() => {
+    setShowSearch(false);
+    setChangeBindingMode(false);
+  }, []);
 
   // 渲染加载状态
   if (loading) {
@@ -133,8 +150,9 @@ const CustomerInfoPage: React.FC = () => {
       <CustomerSearch
         externalUserID={externalUserID}
         fieldConfigs={fieldConfigs}
-        onCancel={() => setShowSearch(false)}
+        onCancel={handleCancelSearch}
         onBindSuccess={handleBindSuccess}
+        oldCustomerRowId={changeBindingMode ? customer?.row_id : undefined}
       />
     );
   }
@@ -160,6 +178,16 @@ const CustomerInfoPage: React.FC = () => {
   // 渲染客户信息表单
   return (
     <div className={styles.container}>
+      <div className={styles.changeBindingBar}>
+        <Button
+          type="link"
+          icon={<SwapOutlined />}
+          onClick={handleChangeBinding}
+          className={styles.changeBindingButton}
+        >
+          更改客户绑定
+        </Button>
+      </div>
       <CustomerForm
         customer={customer}
         fieldConfigs={fieldConfigs}

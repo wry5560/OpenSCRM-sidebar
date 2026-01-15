@@ -114,6 +114,19 @@ export async function bindCustomer(
   });
 }
 
+// 更改客户绑定
+export async function changeBinding(
+  newRowId: string,
+  oldRowId: string,
+  externalUserID: string,
+  staffId?: string
+): Promise<any> {
+  return request(`${StaffFrontendApiPrefix}/mingdao/customer/${newRowId}/change-binding`, {
+    method: 'POST',
+    data: { old_row_id: oldRowId, external_user_id: externalUserID, staff_id: staffId },
+  });
+}
+
 // 等待企业微信SDK初始化完成（包括agentConfig）
 function waitForWxSdk(maxRetries: number = 20, interval: number = 500): Promise<void> {
   return new Promise((resolve, reject) => {
