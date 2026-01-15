@@ -56,6 +56,10 @@ export default [
                 component: './StaffFrontend/MaterialLibrary/index',
               },
               {
+                path: '/welcome',
+                redirect: '/customer-info',
+              },
+              {
                 component: './404',
               },
             ],
