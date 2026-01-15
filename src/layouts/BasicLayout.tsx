@@ -93,6 +93,8 @@ const BasicLayout: React.FC<BasicLayoutProps> = (props) => {
             jsApiList: ['sendChatMessage', 'getCurExternalContact'], // 必填，传入需要使用的接口名称
             success(result: any) {
               console.log("agentConfig 成功", "result", result)
+              // @ts-ignore
+              window.__wxAgentConfigReady = true;
             },
             fail(result: any) {
               console.log("agentConfig 失败", "result", result)

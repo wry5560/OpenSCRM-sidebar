@@ -114,16 +114,16 @@ export async function bindCustomer(
   });
 }
 
-// 等待企业微信SDK初始化完成
-function waitForWxSdk(maxRetries: number = 10, interval: number = 500): Promise<void> {
+// 等待企业微信SDK初始化完成（包括agentConfig）
+function waitForWxSdk(maxRetries: number = 20, interval: number = 500): Promise<void> {
   return new Promise((resolve, reject) => {
     let retries = 0;
     const check = () => {
       // @ts-ignore
-      if (window.wx && window.wx.invoke) {
+      if (window.__wxAgentConfigReady) {
         resolve();
       } else if (retries >= maxRetries) {
-        reject(new Error('企业微信JSSDK加载超时'));
+        reject(new Error('企业微信JSSDK初始化超时'));
       } else {
         retries++;
         setTimeout(check, interval);
