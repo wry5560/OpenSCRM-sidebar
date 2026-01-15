@@ -248,8 +248,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   );
 
   // 按分组渲染字段
-  const basicFields = fieldConfigs.slice(0, 11); // 基本信息
-  const profileFields = fieldConfigs.slice(11); // 客户画像
+  // 基本信息只显示客户编号和号码
+  const basicFieldIds = ['693660e95326c71216b1b87a', '692f976f7001b729cd1c01c1'];
+  const basicFieldNames = ['客户编号', '号码'];
+  const basicFields = fieldConfigs.filter(
+    (field) => basicFieldIds.includes(field.id) || basicFieldNames.includes(field.name)
+  );
+  // 客户画像 - 排除基本信息字段后的其他字段
+  const profileFields = fieldConfigs.filter(
+    (field) => !basicFieldIds.includes(field.id) && !basicFieldNames.includes(field.name)
+  );
 
   return (
     <Spin spinning={saving}>
